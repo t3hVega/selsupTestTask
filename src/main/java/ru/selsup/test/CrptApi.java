@@ -15,6 +15,9 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+/**
+ * Класс для работы с API честного знака
+ */
 public class CrptApi {
     private static String targetUri = "https://ismp.crpt.ru/api/v3/lk/documents/create";
     Logger logger = Logger.getLogger(CrptApi.class.getName());
