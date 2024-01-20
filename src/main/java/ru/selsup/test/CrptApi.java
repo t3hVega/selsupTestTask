@@ -68,7 +68,7 @@ public class CrptApi {
     }
 
     /**
-     * Метод для подачи семафору новых запросов@param jsonDocument
+     * Метод для подачи семафору новых запросов
      * @param httpRequest
      * @return
      */
