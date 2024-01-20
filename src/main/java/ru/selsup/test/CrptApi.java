@@ -43,6 +43,22 @@ public class CrptApi {
     }
 
     /**
+     * Метод для создания документа
+     * @param document
+     * @param signature
+     * @return
+     */
+    public void createDocument(Document document, String signature) throws IOException, InterruptedException {
+        String jsonDocument = convertDocumentToJson(document);
+        HttpRequest httpRequest = generateHttpRequest(jsonDocument, signature);
+        if (!isProcessingActive) {
+            signaller();
+        }
+        requestSemaphore.acquire();
+        sendRequest(httpRequest);
+    }
+
+    /**
      * Метод для конвертации документа в JSON
      * @param document
      * @return String
@@ -79,22 +95,6 @@ public class CrptApi {
         } else {
             logger.warning("Возникла ошибка при отправлении запроса, код ошибки: " + response.statusCode());
         }
-    }
-
-    /**
-     * Метод для создания документа
-     * @param document
-     * @param signature
-     * @return
-     */
-    public void createDocument(Document document, String signature) throws IOException, InterruptedException {
-        String jsonDocument = convertDocumentToJson(document);
-        HttpRequest httpRequest = generateHttpRequest(jsonDocument, signature);
-        if (!isProcessingActive) {
-            signaller();
-        }
-        requestSemaphore.acquire();
-        sendRequest(httpRequest);
     }
 
     /**
