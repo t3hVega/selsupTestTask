@@ -113,7 +113,7 @@ public class CrptApi {
      * Класс документа
      */
     public static class Document {
-        private Description description = new Description();
+        private Description description;
         private String docId;
         private String docStatus;
         private String docType;
