@@ -8,8 +8,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
@@ -18,18 +17,14 @@ import java.util.logging.Logger;
 
 public class CrptApi {
     private static String targetUri = "https://ismp.crpt.ru/api/v3/lk/documents/create";
-    private static String selfUri = "http://localhost:8080";
     Logger logger = Logger.getLogger(CrptApi.class.getName());
-    private boolean isLimitReached = false;
     private boolean isProcessingActive = false;
-    private int numOfRequests;
     private final HttpClient httpClient;
     private final TimeUnit timeUnit;
     private final long duration;
     private final int requestLimit;
     private final Semaphore requestSemaphore;
     private final ScheduledExecutorService scheduler;
-    private Document document = new Document();
     ObjectMapper objectMapper = new ObjectMapper();
 
     public CrptApi(HttpClient httpClient, TimeUnit timeUnit, long duration, int requestLimit) {
@@ -44,19 +39,36 @@ public class CrptApi {
         this.scheduler = Executors.newScheduledThreadPool(1);
     }
 
+    /**
+     * Метод для конвертации документа в JSON
+     * @param document
+     * @return String
+     * @throws JsonProcessingException
+     */
     private String convertDocumentToJson(Document document) throws JsonProcessingException {
         return objectMapper.writeValueAsString(document);
     }
 
+    /**
+     * Метод для генерации HTTP-запроса
+     * @param jsonDocument
+     * @param signature
+     * @return HttpRequest
+     */
     private HttpRequest generateHttpRequest(String jsonDocument, String signature) {
         return HttpRequest.newBuilder()
-                .uri(URI.create(selfUri))
+                .uri(URI.create(targetUri))
                 .header("Content-Type", "application/json")
                 .header("Signature", signature)
                 .POST(HttpRequest.BodyPublishers.ofString(jsonDocument))
                 .build();
     }
 
+    /**
+     * Метод для подачи семафору новых запросов@param jsonDocument
+     * @param httpRequest
+     * @return
+     */
     private void sendRequest (HttpRequest httpRequest) throws IOException, InterruptedException {
         HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
@@ -66,21 +78,25 @@ public class CrptApi {
         }
     }
 
+    /**
+     * Метод для создания документа
+     * @param document
+     * @param signature
+     * @return
+     */
     public void createDocument(Document document, String signature) throws IOException, InterruptedException {
         String jsonDocument = convertDocumentToJson(document);
         HttpRequest httpRequest = generateHttpRequest(jsonDocument, signature);
         if (!isProcessingActive) {
-            isProcessingActive = true;
             signaller();
-        }
-        numOfRequests++;
-        if (numOfRequests == requestLimit) {
-            isLimitReached = true;
         }
         requestSemaphore.acquire();
         sendRequest(httpRequest);
     }
 
+    /**
+     * Метод для подачи семафору новых запросов
+     */
     private void signaller() {
         isProcessingActive = true;
         scheduler.scheduleWithFixedDelay(() -> {
@@ -90,26 +106,23 @@ public class CrptApi {
                 duration, duration, timeUnit);
     }
 
-    public Document getDocument() {
-        return document;
-    }
-
+    /**
+     * Класс документа
+     */
     public static class Document {
         private Description description = new Description();
-        private String docId = "string";
-        private String docStatus = "string";
-        private String docType = "LP_INTRODUCE_GOODS";
-        private boolean importRequest = true;
-        private String ownerInn = "string";
-        private String participantInn = "string";
-        private String producerInn = "string";
-        private String productionDate  = "2020-01-23";;
-        private String productionType = "string";
-        private ArrayList<Product> products = new ArrayList<>() {{
-            new Product();
-        }};
-        private String regDate = "2020-01-23";
-        private String regNumber = "string";
+        private String docId;
+        private String docStatus;
+        private String docType;
+        private boolean importRequest;
+        private String ownerInn;
+        private String participantInn;
+        private String producerInn;
+        private String productionDate;
+        private String productionType;
+        private List<Product> products;
+        private String regDate;
+        private String regNumber;
 
         public Description getDescription() {
             return description;
@@ -191,11 +204,11 @@ public class CrptApi {
             this.productionType = productionType;
         }
 
-        public ArrayList<Product> getProducts() {
+        public List<Product> getProducts() {
             return products;
         }
 
-        public void setProducts(ArrayList<Product> products) {
+        public void setProducts(List<Product> products) {
             this.products = products;
         }
 
@@ -216,8 +229,11 @@ public class CrptApi {
         }
     }
 
+    /**
+     * Класс описания документа
+     */
     public static class Description{
-        private String participantInn = "string";
+        private String participantInn;
 
         public String getParticipantInn() {
             return participantInn;
@@ -228,16 +244,19 @@ public class CrptApi {
         }
     }
 
+    /**
+     * Класс продукта документа
+     */
     public static class Product{
-        private String certificateDocument = "string";
-        private String certificateDocumentDate = "2020-01-23";
-        private String certificateDocumentNumber = "string";
-        private String ownerInn = "string";
-        private String producerInn = "string";
-        private String productionDate = "2020-01-23";
-        private String tnvedCode = "string";
-        private String uitCode = "string";
-        private String uituCode = "string";
+        private String certificateDocument;
+        private String certificateDocumentDate;
+        private String certificateDocumentNumber;
+        private String ownerInn;
+        private String producerInn;
+        private String productionDate;
+        private String tnvedCode;
+        private String uitCode;
+        private String uituCode;
 
         public String getCertificateDocument() {
             return certificateDocument;
