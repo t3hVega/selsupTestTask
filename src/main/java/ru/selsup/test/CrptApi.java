@@ -30,6 +30,14 @@ public class CrptApi {
     private final ScheduledExecutorService scheduler;
     ObjectMapper objectMapper = new ObjectMapper();
 
+    /**
+     * Конструктор нашего класса, в него подается HTTP-клиент, ед-ца времени,
+     * длительность окна приема запросов и кол-во обрабатываемых запросов
+     * @param httpClient
+     * @param timeUnit
+     * @param duration
+     * @param requestLimit
+     */
     public CrptApi(HttpClient httpClient, TimeUnit timeUnit, long duration, int requestLimit) {
         if (requestLimit <= 0) {
             throw new IllegalArgumentException("Указано недопустимое число максимальных запросов.");
