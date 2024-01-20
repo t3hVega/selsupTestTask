@@ -10,6 +10,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -26,6 +28,7 @@ public class CrptApi {
     private final long duration;
     private final int requestLimit;
     private final Semaphore requestSemaphore;
+    private final ScheduledExecutorService scheduler;
     private Document document = new Document();
     ObjectMapper objectMapper = new ObjectMapper();
 
@@ -38,6 +41,7 @@ public class CrptApi {
         this.duration = duration;
         this.requestLimit = requestLimit;
         this.requestSemaphore = new Semaphore(requestLimit, true);
+        this.scheduler = Executors.newScheduledThreadPool(1);
     }
 
     private String convertDocumentToJson(Document document) throws JsonProcessingException {
@@ -73,31 +77,17 @@ public class CrptApi {
         if (numOfRequests == requestLimit) {
             isLimitReached = true;
         }
-        if (requestSemaphore.tryAcquire(duration, timeUnit)) {
-            sendRequest(httpRequest);
-            logger.info(String.valueOf(requestSemaphore.availablePermits()));
-        }
-
+        requestSemaphore.acquire();
+        sendRequest(httpRequest);
     }
 
     private void signaller() {
-        long start = System.currentTimeMillis();
-        long end = start + timeUnit.toMillis(duration);
-        Thread thread = new Thread(() -> {
-            while (true) {
-                if (System.currentTimeMillis() > end) {
-                    requestSemaphore.release(requestLimit - requestSemaphore.availablePermits());
+        isProcessingActive = true;
+        scheduler.scheduleWithFixedDelay(() -> {
                     isProcessingActive = false;
-                    numOfRequests = 0;
-                    isLimitReached = false;
-                    Thread.currentThread().interrupt();
-                    throw new RuntimeException();
-                }
-            }
-
-
-        });
-        thread.start();
+                    requestSemaphore.release(requestLimit - requestSemaphore.availablePermits());
+                },
+                duration, duration, timeUnit);
     }
 
     public Document getDocument() {
