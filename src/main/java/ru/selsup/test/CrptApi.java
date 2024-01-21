@@ -21,7 +21,6 @@ import java.util.logging.Logger;
 public class CrptApi {
     private static String targetUri = "https://ismp.crpt.ru/api/v3/lk/documents/create";
     Logger logger = Logger.getLogger(CrptApi.class.getName());
-    private boolean isProcessingActive = false;
     private final HttpClient httpClient;
     private final TimeUnit timeUnit;
     private final long duration;
@@ -48,10 +47,7 @@ public class CrptApi {
         this.requestLimit = requestLimit;
         this.requestSemaphore = new Semaphore(requestLimit, true);
         this.scheduler = Executors.newScheduledThreadPool(1);
-        scheduler.scheduleWithFixedDelay(() -> {
-                    isProcessingActive = false;
-                    requestSemaphore.release(requestLimit - requestSemaphore.availablePermits());
-                },
+        scheduler.scheduleWithFixedDelay(() -> requestSemaphore.release(requestLimit - requestSemaphore.availablePermits()),
                 duration, duration, timeUnit);
     }
 
