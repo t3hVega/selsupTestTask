@@ -48,6 +48,11 @@ public class CrptApi {
         this.requestLimit = requestLimit;
         this.requestSemaphore = new Semaphore(requestLimit, true);
         this.scheduler = Executors.newScheduledThreadPool(1);
+        scheduler.scheduleWithFixedDelay(() -> {
+                    isProcessingActive = false;
+                    requestSemaphore.release(requestLimit - requestSemaphore.availablePermits());
+                },
+                duration, duration, timeUnit);
     }
 
     /**
@@ -59,9 +64,6 @@ public class CrptApi {
     public void createDocument(Document document, String signature) throws IOException, InterruptedException {
         String jsonDocument = convertDocumentToJson(document);
         HttpRequest httpRequest = generateHttpRequest(jsonDocument, signature);
-        if (!isProcessingActive) {
-            signaller();
-        }
         requestSemaphore.acquire();
         sendRequest(httpRequest);
     }
@@ -103,18 +105,6 @@ public class CrptApi {
         } else {
             logger.warning("Возникла ошибка при отправлении запроса, код ошибки: " + response.statusCode());
         }
-    }
-
-    /**
-     * Метод для подачи семафору новых запросов
-     */
-    private void signaller() {
-        isProcessingActive = true;
-        scheduler.scheduleWithFixedDelay(() -> {
-                    isProcessingActive = false;
-                    requestSemaphore.release(requestLimit - requestSemaphore.availablePermits());
-                },
-                duration, duration, timeUnit);
     }
 
     /**
