@@ -48,7 +48,7 @@ public class CrptApi {
         this.requestSemaphore = new Semaphore(requestLimit, true);
         this.scheduler = Executors.newScheduledThreadPool(1);
         scheduler.scheduleWithFixedDelay(() -> requestSemaphore.release(requestLimit - requestSemaphore.availablePermits()),
-                duration, duration, timeUnit);
+                0, duration, timeUnit);
     }
 
     /**
